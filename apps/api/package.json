@@ -25,6 +25,7 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^22.15.3",
     "prisma": "6",
     "tsx": "^4.22.4",
