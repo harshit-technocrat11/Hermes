@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "../lib/auth";
+// import { api } from "../lib/auth";
+import { api } from "../../../lib/auth";
 import { AtSign, Image as ImageIcon, ArrowRight, Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 export default function OnboardingPage() {
@@ -25,7 +26,7 @@ export default function OnboardingPage() {
         const user = res.data.user;
         if (user.onboarded) {
           // If already onboarded, redirect straight to dashboard
-          router.push("/dashboard");
+          router.push("worskpaceslug/dashboard");
         } else {
           // Pre-fill image URL from Google if present
           if (user.imageUrl) {
