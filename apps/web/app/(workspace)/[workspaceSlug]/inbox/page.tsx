@@ -79,7 +79,7 @@ export default function InboxPage() {
               <div className="flex items-start gap-4">
                 {/* Avatar */}
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
-                  {message.sender.split(" ")[0][0]}
+                  {message.sender.charAt(0)}
                 </div>
 
                 {/* Message Content */}
