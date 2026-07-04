@@ -40,6 +40,41 @@ services:
     volumes:
       - minio_data:/data
 
+  api:
+    build:
+      context: ../../
+      dockerfile: apps/api/Dockerfile
+    container_name: hermes-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../apps/api/.env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://hermes:hermes@postgres:5432/hermes?schema=public
+      - REDIS_URL=redis://redis:6379
+      - PORT=8000
+    depends_on:
+      - postgres
+      - redis
+
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: hermes-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
   minio_data:

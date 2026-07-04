@@ -1,12 +1,18 @@
+"use client";
+
+import { useAuth } from "../../../hooks/use-auth";
 import { Calendar, AlertCircle, TrendingUp, Users } from "lucide-react";
 
 export default function DashboardPage() {
+  const { user, isLoading } = useAuth();
+  const firstName = user?.name ? user.name.split(" ")[0] : "";
+
   return (
     <div className="p-8 max-w-7xl">
       {/* Welcome Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-100 mb-2">
-          Good morning, Alex
+          {isLoading ? "Good morning" : `Good morning, ${firstName || "User"}`}
         </h1>
         <p className="text-slate-400">
           Here's what's happening in your workspace today.

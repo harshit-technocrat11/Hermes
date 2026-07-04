@@ -1,13 +1,14 @@
 "use client";
 
+import { use } from "react";
 import { usePathname } from "next/navigation";
 import { AppShell } from "../../../components/layout";
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     workspaceSlug: string;
-  };
+  }>;
 }
 
 export default function WorkspaceLayout({
@@ -15,7 +16,7 @@ export default function WorkspaceLayout({
   params,
 }: WorkspaceLayoutProps) {
   const pathname = usePathname();
-  const { workspaceSlug } = params;
+  const { workspaceSlug } = use(params);
 
   // Determine the active section based on the current pathname
   const getActiveSection = (): string => {
