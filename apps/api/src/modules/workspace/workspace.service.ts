@@ -1,7 +1,6 @@
-import { PrismaClient, Prisma, Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
+import prisma from "../../lib/prisma";
 
 function generateSlug(name: string): string {
   return name
