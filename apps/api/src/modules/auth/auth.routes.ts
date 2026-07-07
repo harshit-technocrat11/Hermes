@@ -3,6 +3,7 @@ import passport from "passport";
 import { asyncHandler } from "../../common/utils/async-handler";
 import * as authController from "./auth.controller";
 import { rateLimit } from "../../middleware/ratelimiter.middleware";
+import { requireAuth } from "../../middleware/auth.middleware";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get(
   authController.handleGoogleCallback
 );
 
-router.get("/me", asyncHandler(authController.getMe));
+router.get("/me", requireAuth, asyncHandler(authController.getMe));
 
 router.post("/logout", authController.logout);
 

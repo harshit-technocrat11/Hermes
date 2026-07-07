@@ -12,7 +12,7 @@ export const checkUsername = async (req: Request, res: Response) => {
 };
 
 export const submitOnboarding = async (req: Request, res: Response) => {
-  const { username, imageUrl, workspaceName } = req.body;
+  const { username, imageUrl, workspaceName, inviteCode } = req.body;
   const userId = req.user!.id; // req.user is guaranteed by global auth middleware
 
   try {
@@ -20,7 +20,8 @@ export const submitOnboarding = async (req: Request, res: Response) => {
       userId,
       username,
       imageUrl,
-      workspaceName
+      workspaceName,
+      inviteCode
     );
 
     return res.status(200).json(

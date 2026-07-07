@@ -52,11 +52,9 @@ services:
       - ../../apps/api/.env
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://hermes:hermes@postgres:5432/hermes?schema=public
       - REDIS_URL=redis://redis:6379
       - PORT=8000
     depends_on:
-      - postgres
       - redis
 
   web:

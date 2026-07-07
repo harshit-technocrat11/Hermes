@@ -15,7 +15,8 @@ export const completeOnboarding = async (
   userId: string,
   username: string,
   imageUrl: string | undefined,
-  workspaceName: string
+  workspaceName?: string,
+  inviteCode?: string
 ) => {
   const sanitizedUsername = username.trim().toLowerCase();
 
@@ -43,7 +44,42 @@ export const completeOnboarding = async (
       },
     });
 
-    const workspace = await createWorkspaceForUser(userId, workspaceName, tx);
+    let workspace;
+
+    if (inviteCode) {
+      const sanitizedCode = inviteCode.trim().toUpperCase();
+      workspace = await tx.workspace.findUnique({
+        where: { inviteCode: sanitizedCode },
+      });
+
+      if (!workspace) {
+        throw new Error("Invalid invite code. Workspace not found.");
+      }
+
+      // Check if already a member
+      const existingMembership = await tx.workspaceMember.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId,
+            workspaceId: workspace.id,
+          },
+        },
+      });
+
+      if (!existingMembership) {
+        await tx.workspaceMember.create({
+          data: {
+            workspaceId: workspace.id,
+            userId,
+            role: "MEMBER",
+          },
+        });
+      }
+    } else if (workspaceName) {
+      workspace = await createWorkspaceForUser(userId, workspaceName, tx);
+    } else {
+      throw new Error("Either workspaceName or inviteCode is required.");
+    }
 
     return { user, workspace };
   });

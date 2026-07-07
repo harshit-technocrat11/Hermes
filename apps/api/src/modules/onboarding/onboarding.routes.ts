@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../common/utils/async-handler";
 import { validate } from "../../middleware/validate.middleware";
 import { rateLimit } from "../../middleware/ratelimiter.middleware";
+import { requireAuth } from "../../middleware/auth.middleware";
 import { checkUsernameSchema, submitOnboardingSchema } from "./onboarding.schema";
 import * as onboardingController from "./onboarding.controller";
 
@@ -23,6 +24,7 @@ router.get(
 
 router.post(
   "/",
+  requireAuth,
   validate(submitOnboardingSchema),
   asyncHandler(onboardingController.submitOnboarding)
 );
