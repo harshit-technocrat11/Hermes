@@ -32,7 +32,7 @@ router.get(
   authController.handleGoogleCallback
 );
 
-router.get("/me", requireAuth, asyncHandler(authController.getMe));
+router.get("/me", authLimiter, requireAuth, asyncHandler(authController.getMe));
 
 router.post("/logout", authController.logout);
 

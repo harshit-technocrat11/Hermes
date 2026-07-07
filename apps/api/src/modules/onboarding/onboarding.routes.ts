@@ -15,6 +15,13 @@ const checkUsernameLimiter = rateLimit({
   message: "Too many username checks. Please slow down."
 });
 
+// Limit onboarding submissions to reduce abuse/DoS risk on authenticated write endpoint
+const submitOnboardingLimiter = rateLimit({
+  capacity: 3,
+  refillRate: 1,
+  message: "Too many onboarding submissions. Please try again shortly."
+});
+
 router.get(
   "/check-username",
   checkUsernameLimiter,
@@ -25,6 +32,7 @@ router.get(
 router.post(
   "/",
   requireAuth,
+  submitOnboardingLimiter,
   validate(submitOnboardingSchema),
   asyncHandler(onboardingController.submitOnboarding)
 );
