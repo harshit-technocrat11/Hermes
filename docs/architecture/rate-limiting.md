@@ -61,7 +61,7 @@ The following endpoints have explicit token bucket rate limiters configured:
 * **Refill Rate (`1 token per second`):** Refills the bucket at a rate of 1 query per second once exhausted.
 
 ### 2. User Session Verification (`GET /api/v1/auth/me`)
-* **Bucket Capacity (`20`):** Provides a large bucket size to prevent false triggers during concurrent API fetches or sudden UI dashboard reloads.
+* **Bucket Capacity (`60`):** Provides a large bucket size to prevent false triggers during concurrent API fetches or sudden UI dashboard reloads.
 * **Refill Rate (`1 token per second`):** Restores token capacity steadily.
 
 ### 3. Onboarding Submission Profile Write (`POST /api/v1/onboarding`)

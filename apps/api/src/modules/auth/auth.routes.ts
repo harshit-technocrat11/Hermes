@@ -13,6 +13,12 @@ const authLimiter = rateLimit({
   message: "Too many login attempts. Please try again later.",
 });
 
+const meLimiter = rateLimit({
+  capacity: 60,
+  refillRate: 1,
+  message: "Too many requests. Please try again later.",
+});
+
 router.get(
   "/google",
   authLimiter,
@@ -32,7 +38,7 @@ router.get(
   authController.handleGoogleCallback
 );
 
-router.get("/me", authLimiter, requireAuth, asyncHandler(authController.getMe));
+router.get("/me", meLimiter, requireAuth, asyncHandler(authController.getMe));
 
 router.post("/logout", authController.logout);
 
