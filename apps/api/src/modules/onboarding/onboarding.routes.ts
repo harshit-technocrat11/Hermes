@@ -31,8 +31,8 @@ router.get(
 
 router.post(
   "/",
-  requireAuth,
   submitOnboardingLimiter,
+  requireAuth,
   validate(submitOnboardingSchema),
   asyncHandler(onboardingController.submitOnboarding)
 );

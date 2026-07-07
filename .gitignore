@@ -64,3 +64,4 @@ coverage
 
 apps/web/public/*.svg
 apps/web/app/fonts/*.woff
+plan_members
