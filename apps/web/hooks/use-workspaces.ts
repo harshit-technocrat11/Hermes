@@ -30,7 +30,7 @@ export function useWorkspaces(): UseWorkspacesResult {
     setError(null);
     try {
       const res = await api.get("/api/v1/workspaces");
-      setWorkspaces(res.data.workspaces ?? []);
+      setWorkspaces(res.data ?? []);
     } catch (err: any) {
       setError(err?.message ?? "Failed to load workspaces");
     } finally {

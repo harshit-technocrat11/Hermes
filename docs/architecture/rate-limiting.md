@@ -54,8 +54,19 @@ When a user is choosing a username during onboarding:
 
 ## 🛠️ Configuration Settings
 
-For the `onboarding/check-username` endpoint, the following values have been configured:
+The following endpoints have explicit token bucket rate limiters configured:
 
-* **Bucket Capacity (`5`):** Allows a user to perform up to 5 checks in immediate succession (e.g. typing a short name quickly).
-* **Refill Rate (`1 token per second`):** Once exhausted, the user gains the ability to check one name every second.
-* **Memory Cleanup Interval (`10 minutes`):** Automatically sweeps inactive IP buckets from memory to keep the server RAM footprint tiny and prevent memory leaks.
+### 1. Username Availability Check (`GET /api/v1/onboarding/check-username`)
+* **Bucket Capacity (`5`):** Allows a user to perform up to 5 checks in immediate succession (useful for fast typing/corrections).
+* **Refill Rate (`1 token per second`):** Refills the bucket at a rate of 1 query per second once exhausted.
+
+### 2. User Session Verification (`GET /api/v1/auth/me`)
+* **Bucket Capacity (`60`):** Provides a large bucket size to prevent false triggers during concurrent API fetches or sudden UI dashboard reloads.
+* **Refill Rate (`1 token per second`):** Restores token capacity steadily.
+
+### 3. Onboarding Submission Profile Write (`POST /api/v1/onboarding`)
+* **Bucket Capacity (`3`):** Protects the main onboarding database write endpoint from DoS or script abuse.
+* **Refill Rate (`1 token per second`):** Limits continuous write attempts.
+
+### 🧹 Memory Management
+* **Memory Cleanup Interval (`10 minutes`):** All instantiated rate limiters monitor bucket activity. If a bucket's IP address has been inactive for 10 minutes, it is automatically purged from the server memory to prevent leaks.

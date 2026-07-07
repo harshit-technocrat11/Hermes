@@ -20,6 +20,8 @@ export default function OnboardingPage() {
   const [username, setUsername] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceMode, setWorkspaceMode] = useState<"create" | "join">("create");
+  const [inviteCode, setInviteCode] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -107,12 +109,17 @@ export default function OnboardingPage() {
     setStep(3);
   };
 
-  // 4. Final submission — creates the user profile AND the workspace together
+  // 4. Final submission — creates/joins user profile AND workspace together
   const handleCompleteSetup = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (workspaceName.trim().length < 3) {
+    if (workspaceMode === "create" && workspaceName.trim().length < 3) {
       setErrorMessage("Workspace name must be at least 3 characters.");
+      return;
+    }
+
+    if (workspaceMode === "join" && inviteCode.trim().length !== 8) {
+      setErrorMessage("Invite code must be exactly 8 characters.");
       return;
     }
 
@@ -120,12 +127,22 @@ export default function OnboardingPage() {
     setErrorMessage("");
 
     try {
-      await api.post("/api/v1/onboarding", {
+      const payload: any = {
         username: username.trim().toLowerCase(),
         imageUrl: imageUrl.trim() || undefined,
-        workspaceName: workspaceName.trim(),
-      });
-      router.push("/dashboard");
+      };
+
+      if (workspaceMode === "create") {
+        payload.workspaceName = workspaceName.trim();
+      } else {
+        payload.inviteCode = inviteCode.trim().toUpperCase();
+      }
+
+      const res = await api.post("/api/v1/onboarding", payload);
+      const redirectUrl = res.data.workspace
+        ? `/${res.data.workspace.slug}/dashboard`
+        : "/dashboard";
+      router.push(redirectUrl);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to complete onboarding.");
       setIsSubmitting(false);
@@ -144,13 +161,16 @@ export default function OnboardingPage() {
   const stepTitles: Record<1 | 2 | 3, string> = {
     1: "Choose a username",
     2: "Setup your profile picture",
-    3: "Create your workspace",
+    3: workspaceMode === "create" ? "Create your workspace" : "Join a workspace",
   };
 
   const stepSubtitles: Record<1 | 2 | 3, string> = {
     1: "Choose a unique username so your team can refer to you.",
     2: "Add an image URL so your team can recognize you.",
-    3: "Give your workspace a name. You can create more later.",
+    3:
+      workspaceMode === "create"
+        ? "Give your workspace a name. You can create more later."
+        : "Enter the 8-character invite code to join your team.",
   };
 
   return (
@@ -307,40 +327,100 @@ export default function OnboardingPage() {
         {step === 3 && (
           /* ================= STEP 3: WORKSPACE ================= */
           <form onSubmit={handleCompleteSetup} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                Workspace Name
-              </label>
-              <div className="relative flex items-center">
-                <Building2 className="w-5 h-5 text-slate-500 absolute left-3 pointer-events-none" />
-                <input
-                  type="text"
-                  value={workspaceName}
-                  onChange={(e) => setWorkspaceName(e.target.value)}
-                  placeholder="Acme Inc."
-                  className="w-full h-12 pl-10 pr-4 bg-slate-950 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-                  autoFocus
-                  required
-                />
-              </div>
-              <p className="text-xs text-slate-500">
-                You can create additional workspaces later.
-              </p>
+            {/* Mode Selector Tabs */}
+            <div className="flex bg-slate-950 p-1 rounded-lg border border-white/5 mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkspaceMode("create");
+                  setErrorMessage("");
+                }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${
+                  workspaceMode === "create"
+                    ? "bg-white/10 text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                Create Workspace
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkspaceMode("join");
+                  setErrorMessage("");
+                }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${
+                  workspaceMode === "join"
+                    ? "bg-white/10 text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                Join Workspace
+              </button>
             </div>
+
+            {workspaceMode === "create" ? (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                  Workspace Name
+                </label>
+                <div className="relative flex items-center">
+                  <Building2 className="w-5 h-5 text-slate-500 absolute left-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={workspaceName}
+                    onChange={(e) => setWorkspaceName(e.target.value)}
+                    placeholder="Acme Inc."
+                    className="w-full h-12 pl-10 pr-4 bg-slate-950 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <p className="text-xs text-slate-500">
+                  You can create additional workspaces later.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                  Workspace Invite Code
+                </label>
+                <div className="relative flex items-center">
+                  <AtSign className="w-5 h-5 text-slate-500 absolute left-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
+                    placeholder="e.g. A1B2C3D4"
+                    maxLength={8}
+                    className="w-full h-12 pl-10 pr-4 bg-slate-950 border border-white/10 rounded-lg text-white font-mono text-sm tracking-widest focus:outline-none focus:border-indigo-500 transition-colors"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <p className="text-xs text-slate-500">
+                  Ask your workspace administrator for the 8-character invite code.
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-col gap-3">
               <button
                 type="submit"
-                disabled={isSubmitting || workspaceName.trim().length < 3}
+                disabled={
+                  isSubmitting ||
+                  (workspaceMode === "create" && workspaceName.trim().length < 3) ||
+                  (workspaceMode === "join" && inviteCode.trim().length !== 8)
+                }
                 className="inline-flex items-center justify-center w-full h-12 px-5 bg-white text-slate-900 border border-white/20 rounded-lg cursor-pointer font-semibold text-sm transition-all duration-200 shadow-sm hover:bg-slate-50 hover:border-indigo-500 hover:-translate-y-0.5 hover:shadow-[0_8px_16px_rgba(99,102,241,0.15)] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Creating Workspace...
+                    {workspaceMode === "create" ? "Creating Workspace..." : "Joining Workspace..."}
                   </>
                 ) : (
-                  "Create Workspace"
+                  workspaceMode === "create" ? "Create Workspace" : "Join Workspace"
                 )}
               </button>
               <button

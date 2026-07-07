@@ -3,6 +3,7 @@ import passport from "passport";
 import { asyncHandler } from "../../common/utils/async-handler";
 import * as authController from "./auth.controller";
 import { rateLimit } from "../../middleware/ratelimiter.middleware";
+import { requireAuth } from "../../middleware/auth.middleware";
 
 const router = Router();
 
@@ -10,6 +11,12 @@ const authLimiter = rateLimit({
   capacity: 20,
   refillRate: 1,
   message: "Too many login attempts. Please try again later.",
+});
+
+const meLimiter = rateLimit({
+  capacity: 60,
+  refillRate: 1,
+  message: "Too many requests. Please try again later.",
 });
 
 router.get(
@@ -31,7 +38,7 @@ router.get(
   authController.handleGoogleCallback
 );
 
-router.get("/me", asyncHandler(authController.getMe));
+router.get("/me", meLimiter, requireAuth, asyncHandler(authController.getMe));
 
 router.post("/logout", authController.logout);
 
