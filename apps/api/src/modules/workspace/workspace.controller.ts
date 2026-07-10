@@ -1,4 +1,4 @@
-﻿import crypto from "crypto";
+import crypto from "crypto";
 import { Role } from "@prisma/client";
 import { Request, Response } from "express";
 
@@ -102,30 +102,7 @@ export const getWorkspace = async (req: Request, res: Response) => {
   return res.status(200).json(successResponse(workspace));
 };
 
-export const getWorkspaceMembers = async (req: Request, res: Response) => {
-  const userId = req.user!.id;
-  const slug = Array.isArray(req.params.slug)
-    ? req.params.slug[0]
-    : req.params.slug;
-  const { workspace } = await getWorkspaceWithMembership(slug, userId);
 
-  const members = await prisma.workspaceMember.findMany({
-    where: { workspaceId: workspace.id },
-    include: { user: true },
-    orderBy: { createdAt: "asc" },
-  });
-
-  const formattedMembers = members.map(({ user, role }) => ({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    username: user.username,
-    imageUrl: user.imageUrl,
-    role,
-  }));
-
-  return res.status(200).json(successResponse(formattedMembers));
-};
 
 export const updateWorkspace = async (req: Request, res: Response) => {
   const userId = req.user!.id;
