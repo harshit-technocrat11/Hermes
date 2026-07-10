@@ -14,7 +14,7 @@ RUN npm install -g pnpm
 
 # Copy prune JSON files and install all dependencies
 COPY --from=builder /app/out/json/ .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
 # Copy full source and build
 COPY --from=builder /app/out/full/ .
@@ -23,7 +23,7 @@ RUN pnpm --filter api exec prisma generate
 RUN pnpm --filter api build
 
 # Prune devDependencies to keep the final runner image small
-RUN pnpm install --prod --frozen-lockfile --force
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --prod --frozen-lockfile
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
