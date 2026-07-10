@@ -1,80 +1,97 @@
-import { Plus, Search, Shield } from "lucide-react";
+"use client";
 
-export default function MembersPage() {
-  const members = [
-    {
-      id: 1,
-      name: "Alex Rivera",
-      role: "Founding Engineer",
-      email: "alex@nexus.so",
-      status: "Online",
-      avatar: "AR",
-      lastActive: "less than a minute ago",
-    },
-    {
-      id: 2,
-      name: "Sarah Chen",
-      role: "Product Designer",
-      email: "sarah@nexus.so",
-      status: "Online",
-      avatar: "SC",
-      lastActive: "4 minutes ago",
-    },
-    {
-      id: 3,
-      name: "Harshit Mehta",
-      role: "Product Manager",
-      email: "harshit@nexus.so",
-      status: "Idle",
-      avatar: "HM",
-      lastActive: "26 minutes ago",
-    },
-    {
-      id: 4,
-      name: "Ashutosh Verma",
-      role: "Backend Engineer",
-      email: "ashutosh@nexus.so",
-      status: "Offline",
-      avatar: "AV",
-      lastActive: "about 2 hours ago",
-    },
-    {
-      id: 5,
-      name: "John Park",
-      role: "Frontend Engineer",
-      email: "john@nexus.so",
-      status: "Online",
-      avatar: "JP",
-      lastActive: "12 minutes ago",
-    },
-    {
-      id: 6,
-      name: "Emma Wilson",
-      role: "Growth Marketer",
-      email: "emma@nexus.so",
-      status: "Offline",
-      avatar: "EW",
-      lastActive: "about 20 hours ago",
-    },
-  ];
+import { use, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut, Trash2 } from "lucide-react";
+import {
+  useWorkspaceMembers,
+  useMyMembership,
+  type WorkspaceMember,
+} from "../../../../hooks/use-members";
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Online":
-        return "bg-green-500";
-      case "Idle":
-        return "bg-yellow-500";
-      default:
-        return "bg-slate-500";
+export default function MembersPage({
+  params,
+}: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
+  const router = useRouter();
+  const { workspaceSlug } = use(params);
+
+  const { members, isLoading, removeMember, leaveWorkspace } =
+    useWorkspaceMembers(workspaceSlug);
+  const { membership } = useMyMembership(workspaceSlug);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  const getRoleColor = (role: string) => {
+    if (role === "OWNER") return "text-purple-400";
+    if (role === "ADMIN") return "text-blue-400";
+    if (role === "MEMBER") return "text-slate-400";
+    return "text-slate-400";
+  };
+
+  const formatJoinedDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const diffMs = Date.now() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) return "Joined today";
+      if (diffDays === 1) return "Joined yesterday";
+      if (diffDays < 30) return `Joined ${diffDays} days ago`;
+      if (diffDays < 365)
+        return `Joined ${Math.floor(diffDays / 30)} months ago`;
+      return `Joined ${Math.floor(diffDays / 365)} years ago`;
+    } catch {
+      return "Joined recently";
     }
   };
 
-  const getRoleColor = (role: string) => {
-    if (role.includes("Engineer")) return "text-blue-400";
-    if (role.includes("Designer")) return "text-purple-400";
-    if (role.includes("Manager")) return "text-green-400";
-    return "text-slate-400";
+  const handleRemoveMember = async (member: WorkspaceMember) => {
+    const confirmed = window.confirm(
+      `Remove ${member.name} from this workspace?`,
+    );
+    if (!confirmed) return;
+
+    setPendingAction(member.id);
+    try {
+      await removeMember(member.id);
+    } catch (err: any) {
+      alert(
+        err.response?.data?.error || err.message || "Failed to remove member.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
   };
+
+  const handleLeaveWorkspace = async () => {
+    if (!membership || membership.role === "OWNER") return;
+
+    const confirmed = window.confirm("Leave this workspace?");
+    if (!confirmed) return;
+
+    setPendingAction("leave");
+    try {
+      await leaveWorkspace();
+      router.push("/workspaces");
+    } catch (err: any) {
+      alert(
+        err.response?.data?.error ||
+          err.message ||
+          "Failed to leave workspace.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 max-w-7xl text-slate-400">Loading members...</div>
+    );
+  }
+
+  const isOnlyMember = members.length === 1;
 
   return (
     <div className="p-8 max-w-7xl">
@@ -82,25 +99,34 @@ export default function MembersPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-100 mb-2">Members</h1>
-          <p className="text-slate-400">6 total members in your workspace</p>
+          <p className="text-slate-400">
+            {members.length} total members in your workspace
+          </p>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200">
-          <Plus className="w-5 h-5" />
-          Invite Member
-        </button>
+        {membership && membership.role !== "OWNER" && (
+          <button
+            type="button"
+            onClick={handleLeaveWorkspace}
+            disabled={pendingAction === "leave"}
+            className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <LogOut className="h-4 w-4" />
+            {pendingAction === "leave" ? "Leaving..." : "Leave workspace"}
+          </button>
+        )}
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6 flex items-center gap-3 bg-slate-800 rounded-lg px-4 py-3 border border-slate-700 focus-within:border-blue-500 transition-all duration-200 max-w-sm">
-        <Search className="w-5 h-5 text-slate-500" />
-        <input
-          type="text"
-          placeholder="Search members..."
-          className="flex-1 bg-transparent text-slate-100 placeholder-slate-500 outline-none"
-        />
-      </div>
+      {/* Empty State / Only Member */}
+      {isOnlyMember && (
+        <div className="mb-6 bg-blue-900/20 border border-blue-500/20 p-4 rounded-lg text-blue-200">
+          <p>Only you are in this workspace.</p>
+          <p className="text-sm opacity-80 mt-1">
+            Invite teammates using your workspace invite code.
+          </p>
+        </div>
+      )}
 
-      {/* Members Table */}
+      {/* Members List */}
       <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
         <table className="w-full">
           <thead>
@@ -112,10 +138,7 @@ export default function MembersPage() {
                 Role
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Last Active
+                Joined
               </th>
               <th className="px-6 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 Actions
@@ -130,12 +153,25 @@ export default function MembersPage() {
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      {member.avatar}
-                    </div>
+                    {member.image ? (
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-10 h-10 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-100">
+                      <p className="text-sm font-medium text-slate-100 flex items-center gap-2">
                         {member.name}
+                        {membership?.userId === member.userId && (
+                          <span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300">
+                            You
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs text-slate-500">{member.email}</p>
                     </div>
@@ -145,28 +181,44 @@ export default function MembersPage() {
                   <span
                     className={`text-sm font-medium ${getRoleColor(member.role)}`}
                   >
-                    {member.role}
+                    {member.role === "OWNER" ? "Owner" : "Member"}
                   </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2 h-2 rounded-full ${getStatusColor(member.status)}`}
-                    ></div>
-                    <span className="text-sm text-slate-300">
-                      {member.status}
-                    </span>
-                  </div>
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-slate-400">
-                    {member.lastActive}
+                    {formatJoinedDate(member.joinedAt)}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700/50 rounded-lg transition-all duration-200">
-                    <Shield className="w-4 h-4" />
-                  </button>
+                  {membership?.role === "OWNER" &&
+                  membership.userId !== member.userId ? (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(member)}
+                      disabled={
+                        pendingAction === member.id || pendingAction === "leave"
+                      }
+                      className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {pendingAction === member.id ? "Removing..." : "Remove"}
+                    </button>
+                  ) : membership?.userId === member.userId &&
+                    membership?.role !== "OWNER" ? (
+                    <button
+                      type="button"
+                      onClick={handleLeaveWorkspace}
+                      disabled={
+                        pendingAction === "leave" || pendingAction === member.id
+                      }
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700/80 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      {pendingAction === "leave" ? "Leaving..." : "Leave"}
+                    </button>
+                  ) : (
+                    <span className="text-sm text-slate-500">—</span>
+                  )}
                 </td>
               </tr>
             ))}

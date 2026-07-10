@@ -11,6 +11,7 @@ import {
   updateWorkspaceSchema,
   slugParamSchema,
 } from "./workspace.schema";
+import membersRouter from "../members/members.route";
 
 const router = Router();
 
@@ -46,12 +47,12 @@ router.get(
   asyncHandler(workspaceController.getWorkspace),
 );
 
-// ── List all members of a workspace ──────────────────────────────────────────
-// GET /api/v1/workspaces/:slug/members
-router.get(
-  "/:slug/members",
-  validate(slugParamSchema),
-  asyncHandler(workspaceController.getWorkspaceMembers),
+// ── Workspace Members Module ─────────────────────────────────────────────────
+// Routes under /api/v1/workspaces/:workspaceSlug/members
+router.use(
+  "/:workspaceSlug/members",
+  // We can still validate the slug if we want, but let's just mount the router
+  membersRouter,
 );
 
 // ── Update workspace name / iconUrl (OWNER / ADMIN only) ─────────────────────

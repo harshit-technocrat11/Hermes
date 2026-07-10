@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { RAIL_NAV_ITEMS } from "../../config/navigation";
-import { Settings, ChevronDown, Plus, Check, Loader2, Copy, CheckCircle2 } from "lucide-react";
+import { Settings, ChevronDown, Plus, Check, Loader2, Copy, CheckCircle2, LogOut } from "lucide-react";
 import { useAuth } from "../../hooks/use-auth";
 import { useWorkspaces } from "../../hooks/use-workspaces";
 import { api } from "../../lib/auth";
@@ -37,6 +37,18 @@ export function SidebarRail({ workspaceSlug }: SidebarRailProps) {
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleLeaveWorkspace = async () => {
+    if (!window.confirm(`Are you sure you want to leave ${workspaceName}?`)) return;
+    try {
+      setDropdownOpen(false);
+      await api.delete(`/api/v1/workspaces/${workspaceSlug}/members/leave`);
+      await refetch();
+      router.push("/workspaces");
+    } catch (err: any) {
+      alert(err.response?.data?.error || err.message || "Failed to leave workspace. Owners cannot leave their own workspace.");
+    }
   };
 
   const isActive = (href: string) => {
@@ -147,6 +159,13 @@ export function SidebarRail({ workspaceSlug }: SidebarRailProps) {
                 >
                   <Plus className="w-4 h-4 text-slate-400 rotate-45" />
                   Join Workspace
+                </button>
+                <button
+                  onClick={handleLeaveWorkspace}
+                  className="flex items-center gap-2 px-3 py-2 w-full text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-all duration-200 font-semibold mt-1"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Leave Workspace
                 </button>
               </div>
             </div>

@@ -3,7 +3,12 @@ FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm turbo
-COPY . .
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY apps/web/tsconfig.json ./apps/web/tsconfig.json
+COPY packages ./packages
+
 RUN turbo prune web --docker
 
 # Stage 2: Install dependencies & Build code
@@ -14,7 +19,7 @@ RUN npm install -g pnpm
 
 # Copy prune JSON files and install all dependencies
 COPY --from=builder /app/out/json/ .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
 # Copy full source and build
 COPY --from=builder /app/out/full/ .
@@ -26,7 +31,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm --filter web build
 
 # Prune devDependencies to keep the final runner image small
-RUN pnpm install --prod --frozen-lockfile --force
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --prod --frozen-lockfile
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
@@ -38,7 +43,7 @@ ENV PORT=3000
 
 # Copy built app and dependencies
 COPY --from=installer /app/apps/web/.next ./apps/web/.next
-COPY --from=installer /app/apps/web/public ./apps/web/public
+
 COPY --from=installer /app/apps/web/package.json ./apps/web/package.json
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/apps/web/node_modules ./apps/web/node_modules

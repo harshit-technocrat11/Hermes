@@ -3,7 +3,13 @@ FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm turbo
-COPY . .
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/api/tsconfig.json ./apps/api/tsconfig.json
+COPY apps/api/prisma ./apps/api/prisma
+COPY packages ./packages
+
 RUN turbo prune api --docker
 
 # Stage 2: Install dependencies & Build code
@@ -14,7 +20,7 @@ RUN npm install -g pnpm
 
 # Copy prune JSON files and install all dependencies
 COPY --from=builder /app/out/json/ .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
 # Copy full source and build
 COPY --from=builder /app/out/full/ .
@@ -23,7 +29,7 @@ RUN pnpm --filter api exec prisma generate
 RUN pnpm --filter api build
 
 # Prune devDependencies to keep the final runner image small
-RUN pnpm install --prod --frozen-lockfile --force
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --prod --frozen-lockfile
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner

@@ -51,4 +51,8 @@ export const api = {
       body: JSON.stringify(body),
     });
   },
+
+  delete(endpoint: string, options?: Omit<RequestOptions, "method" | "body">) {
+    return this.request(endpoint, { ...options, method: "DELETE" });
+  },
 };
