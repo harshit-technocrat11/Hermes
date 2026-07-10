@@ -30,11 +30,37 @@ export function useWorkspaceMembers(workspaceSlug: string) {
     }
   }, [workspaceSlug]);
 
+  const removeMember = useCallback(
+    async (memberId: string) => {
+      if (!workspaceSlug) throw new Error("Workspace slug is required");
+
+      await api.delete(
+        `/api/v1/workspaces/${workspaceSlug}/members/${memberId}`,
+      );
+      await fetchMembers();
+    },
+    [fetchMembers, workspaceSlug],
+  );
+
+  const leaveWorkspace = useCallback(async () => {
+    if (!workspaceSlug) throw new Error("Workspace slug is required");
+
+    await api.delete(`/api/v1/workspaces/${workspaceSlug}/members/leave`);
+    await fetchMembers();
+  }, [fetchMembers, workspaceSlug]);
+
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
 
-  return { members, isLoading, error, refetch: fetchMembers };
+  return {
+    members,
+    isLoading,
+    error,
+    refetch: fetchMembers,
+    removeMember,
+    leaveWorkspace,
+  };
 }
 
 export function useMyMembership(workspaceSlug: string) {
@@ -45,7 +71,9 @@ export function useMyMembership(workspaceSlug: string) {
     if (!workspaceSlug) return;
     setIsLoading(true);
     try {
-      const res = await api.get(`/api/v1/workspaces/${workspaceSlug}/members/me`);
+      const res = await api.get(
+        `/api/v1/workspaces/${workspaceSlug}/members/me`,
+      );
       setMembership(res.data ?? null);
     } catch (err: any) {
       // Ignore errors for this

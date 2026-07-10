@@ -3,7 +3,12 @@ FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm turbo
-COPY . .
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY apps/web/tsconfig.json ./apps/web/tsconfig.json
+COPY packages ./packages
+
 RUN turbo prune web --docker
 
 # Stage 2: Install dependencies & Build code
