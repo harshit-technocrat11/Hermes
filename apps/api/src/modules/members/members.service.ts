@@ -119,3 +119,38 @@ export async function removeMember(workspaceSlug: string, memberId: string, requ
 
   return { success: true };
 }
+
+export async function leaveWorkspace(workspaceSlug: string, userId: string) {
+  const workspace = await prisma.workspace.findUnique({
+    where: { slug: workspaceSlug },
+  });
+
+  if (!workspace) {
+    throw new AppError(404, "WORKSPACE_NOT_FOUND");
+  }
+
+  const membership = await prisma.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId,
+        workspaceId: workspace.id,
+      },
+    },
+  });
+
+  if (!membership) {
+    throw new AppError(403, ErrorCode.FORBIDDEN);
+  }
+
+  // Owners cannot leave the workspace (they must transfer ownership or delete the workspace)
+  if (membership.role === Role.OWNER) {
+    throw new AppError(400, "OWNER_CANNOT_LEAVE_WORKSPACE");
+  }
+
+  await prisma.workspaceMember.delete({
+    where: { id: membership.id },
+  });
+
+  return { success: true };
+}
+

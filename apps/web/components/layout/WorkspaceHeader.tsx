@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Bell, HelpCircle, ChevronDown, Plus, Check, Loader2, Copy } from "lucide-react";
+import { Search, Bell, HelpCircle, ChevronDown, Plus, Check, Loader2, Copy, LogOut } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { useWorkspaces } from "../../hooks/use-workspaces";
 import { api } from "../../lib/auth";
@@ -37,6 +37,18 @@ export function WorkspaceHeader({
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleLeaveWorkspace = async () => {
+    if (!window.confirm(`Are you sure you want to leave ${currentWorkspaceName}?`)) return;
+    try {
+      setDropdownOpen(false);
+      await api.delete(`/api/v1/workspaces/${workspaceSlug}/members/leave`);
+      await refetch();
+      router.push("/workspaces");
+    } catch (err: any) {
+      alert(err.response?.data?.error || err.message || "Failed to leave workspace. Owners cannot leave their own workspace.");
+    }
   };
 
   return (
@@ -138,6 +150,13 @@ export function WorkspaceHeader({
                 >
                   <Plus className="w-4 h-4 text-slate-400 rotate-45" />
                   Join Workspace
+                </button>
+                <button
+                  onClick={handleLeaveWorkspace}
+                  className="flex items-center gap-2 px-3 py-2 w-full text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-all duration-200 font-semibold mt-1"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Leave Workspace
                 </button>
               </div>
             </div>
